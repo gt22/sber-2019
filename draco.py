@@ -9,6 +9,7 @@ from catboost import CatBoostClassifier
 import os
 import json
 import tqdm
+from itertools import chain
 
 
 # %%
@@ -22,8 +23,10 @@ def get_data(name):
 df = pd.read_csv(get_data("skill_train.csv")).set_index('id')
 # %%
 heroes = pd.read_csv(get_data('heroes.csv')).set_index('hero_id')
-
-
+abils = pd.read_csv(get_data('abilities.csv')).set_index('ability_id')
+abils_behavior = set(chain.from_iterable(abils['behavior']
+                                         .apply(lambda x: eval(x.replace('nan', 'None'))).values))
+items = pd.read_csv(get_data('items.csv')).set_index('item_id')
 # %%
 
 
@@ -39,6 +42,13 @@ def preprocess(d):
     team_map = {'radiant': 0, 'dire': 1, 'other': 2}
     map_df(d, ['player_team', 'winner_team'], team_map)
     d['is_winner'] = (d['player_team'] == d['winner_team']).astype(int)
+    for b in abils_behavior:
+        d[f'upgrade_beh_{b}'] = 0
+    for b in abils['behavior']:
+        d[f'upgrade_beh_list_{b}'] = 0
+    for item in items.index:
+        d[f'item_{item}'] = 0
+    d['item_0'] = 0
 
 
 def preprocess_json(d, f):
@@ -48,8 +58,18 @@ def preprocess_json(d, f):
             rec = json.loads(line)
             i = rec['id']
             lvl = rec['level_up_times']
-            ult_time = -1 if len(lvl) < 9 else lvl[8]
-            d.loc[i, 'ult_time'] = ult_time
+            for b in rec['ability_upgrades']:
+                d.loc[i, f'upgrade_beh_list_{abils.loc[b, "behavior"]}'] += 1
+                for bh in eval(abils.loc[b, 'behavior'].replace("nan", "None")):
+                    d.loc[i, f'upgrade_beh_{bh}'] += 1
+            for item in rec['final_items']:
+                d.loc[i, f'item_{item}'] += 1
+
+            d.loc[i, 'ult_time'] = -1 if len(lvl) < 9 else lvl[8]
+
+
+def preprocess_after_json(d):
+    d['ult_percent'] = d['ult_time'] / d['duration']
 
 
 # %%
@@ -57,8 +77,7 @@ preprocess(df)
 # %%
 preprocess_json(df, get_data('skill_train.jsonlines'))
 # %%
-grp = df.groupby('is_winner')['skilled']
-
+preprocess_after_json(df)
 # %%
 target = 'skilled'
 
@@ -77,7 +96,7 @@ treat_questionable_as_cat = True
 
 # %%
 (X_train, X_test,
- y_train, y_test) = train_test_split(df.drop('skilled', axis=1), df['skilled'], random_state=6741)
+ y_train, y_test) = train_test_split(df.drop(target, axis=1), df[target], random_state=6741)
 
 
 # %%
@@ -108,6 +127,7 @@ def get_score_data(name):
 
 def save_score_data(name, d):
     f = f'{name}_score.csv'
+    d.index.name = 'id'
     d.to_csv(f, index=True, header=True)
 
 
@@ -118,10 +138,10 @@ def score_model(pred_func, name):
     max_acc = s_data['acc'].max()
     print(f"Scoring {name}")
     print("Accuracy:", acc_score)
-    print("Diff from last:", acc_score - last_acc)
-    print("Diff from max:", acc_score - max_acc)
+    print("Diff from last:", round(acc_score - last_acc, 4))
+    print("Diff from max:", round(acc_score - max_acc, 4))
 
-    if acc_score - last_acc > 1e-5:
+    if abs(acc_score - last_acc) > 1e-5:
         s_data = s_data.append({'acc': acc_score}, ignore_index=True)
         save_score_data(name, s_data)
 
@@ -145,6 +165,7 @@ score_model(model.predict, 'catboost')
 test_df = pd.read_csv(get_data('skill_test.csv')).set_index('id')
 preprocess(test_df)
 preprocess_json(test_df, get_data('skill_test.jsonlines'))
+preprocess_after_json(test_df)
 # %%
 
 
