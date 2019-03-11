@@ -7,6 +7,8 @@ from sklearn.model_selection import train_test_split
 from sklearn.metrics import accuracy_score
 from catboost import CatBoostClassifier
 import os
+import json
+import tqdm
 
 
 # %%
@@ -18,6 +20,8 @@ def get_data(name):
 
 # %%
 df = pd.read_csv(get_data("skill_train.csv")).set_index('id')
+# %%
+heroes = pd.read_csv(get_data('heroes.csv')).set_index('hero_id')
 
 
 # %%
@@ -37,8 +41,21 @@ def preprocess(d):
     d['is_winner'] = (d['player_team'] == d['winner_team']).astype(int)
 
 
+def preprocess_json(d, f):
+    d['ult_time'] = 0
+    with open(f) as j:
+        for line in tqdm.tqdm(j, total=len(d)):
+            rec = json.loads(line)
+            i = rec['id']
+            lvl = rec['level_up_times']
+            ult_time = -1 if len(lvl) < 9 else lvl[8]
+            d.loc[i, 'ult_time'] = ult_time
+
+
 # %%
 preprocess(df)
+# %%
+preprocess_json(df, get_data('skill_train.jsonlines'))
 # %%
 grp = df.groupby('is_winner')['skilled']
 
@@ -49,7 +66,7 @@ cat_features = ['player_team', 'winner_team', 'pre_game_duration', 'first_blood_
                 'hero_id', 'hero_pick_order', 'leaver_status', 'is_winner']
 
 questionable_features = ['party_players', 'level', 'tower_kills', 'roshan_kills',
-                         'radiant_tower_status', 'dire_tower_status']
+                         'radiant_tower_status', 'dire_tower_status', 'dire_barracks_status', 'radiant_barracks_status']
 
 numeric_features = [c for c in df.columns if
                     c not in cat_features and
@@ -62,6 +79,7 @@ treat_questionable_as_cat = True
 (X_train, X_test,
  y_train, y_test) = train_test_split(df.drop('skilled', axis=1), df['skilled'], random_state=6741)
 
+
 # %%
 
 
@@ -73,6 +91,7 @@ def cols_to_id(d, cc):
 cat_id = cols_to_id(X_train, cat_features)
 if treat_questionable_as_cat:
     cat_id += cols_to_id(X_train, questionable_features)
+
 
 # %%
 
@@ -119,20 +138,19 @@ model = CatBoostClassifier(
     verbose=True,
 )
 
-# %%
 model.fit(X_train, y_train, cat_features=cat_id, eval_set=(X_test, y_test))
-# %%
+
 score_model(model.predict, 'catboost')
 # %%
-tdf = None
+test_df = pd.read_csv(get_data('skill_test.csv')).set_index('id')
+preprocess(test_df)
+preprocess_json(test_df, get_data('skill_test.jsonlines'))
+# %%
 
 
 def make_submission(predict_func):
-    global tdf
-    tdf = test_df = pd.read_csv(get_data('skill_test.csv'))
-    preprocess(test_df)
-    pred = predict_func(test_df.drop('id', axis=1))
-    subm = pd.DataFrame({'id': test_df.id, 'skilled': pred.astype(int)})
+    pred = predict_func(test_df)
+    subm = pd.DataFrame({'id': test_df.index, 'skilled': pred.astype(int)})
     subm.to_csv('submission.csv', header=True, index=False)
 
 
