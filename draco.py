@@ -4,7 +4,9 @@ import numpy as np
 from matplotlib import pyplot as plt
 import xgboost
 from sklearn.model_selection import train_test_split
+from sklearn.metrics import accuracy_score
 from catboost import CatBoostClassifier
+import os
 
 
 # %%
@@ -74,6 +76,39 @@ if treat_questionable_as_cat:
 
 # %%
 
+
+def get_score_data(name):
+    f = f'{name}_score.csv'
+    if os.path.exists(f):
+        return pd.read_csv(f).set_index('id')
+    else:
+        ret = pd.DataFrame({'id': [0], 'acc': [0]}).set_index('id')
+        save_score_data(name, ret)
+        return ret
+
+
+def save_score_data(name, d):
+    f = f'{name}_score.csv'
+    d.to_csv(f, index=True, header=True)
+
+
+def score_model(pred_func, name):
+    s_data = get_score_data(name)
+    acc_score = accuracy_score(y_test, pred_func(X_test))
+    last_acc = s_data.loc[s_data.index[-1]]['acc']
+    max_acc = s_data['acc'].max()
+    print(f"Scoring {name}")
+    print("Accuracy:", acc_score)
+    print("Diff from last:", acc_score - last_acc)
+    print("Diff from max:", acc_score - max_acc)
+
+    if acc_score - last_acc > 1e-5:
+        s_data = s_data.append({'acc': acc_score}, ignore_index=True)
+        save_score_data(name, s_data)
+
+
+# %%
+
 model = CatBoostClassifier(
     iterations=None,
     learning_rate=None,
@@ -86,6 +121,8 @@ model = CatBoostClassifier(
 
 # %%
 model.fit(X_train, y_train, cat_features=cat_id, eval_set=(X_test, y_test))
+# %%
+score_model(model.predict, 'catboost')
 # %%
 tdf = None
 
