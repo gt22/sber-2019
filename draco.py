@@ -104,7 +104,7 @@ def score_model(pred_func, name):
 # %%
 
 model = CatBoostClassifier(
-    iterations=None,
+    iterations=3000,
     learning_rate=None,
     depth=None,
     eval_metric='Accuracy',
@@ -125,5 +125,4 @@ def make_submission(predict_func):
     subm.to_csv('submission.csv', header=True, index=False)
 
 
-# %%
 make_submission(model.predict)

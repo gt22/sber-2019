@@ -102,6 +102,15 @@ class Series(ProcessingModule):
         return ['player_gold_mean', 'enemy_team_gold_mean', 'player_team_gold_mean']
 
 
+class DamageTargets(ProcessingModule):
+
+    def process(self, l: dict, d: dict):
+        d['dt_sum'] = sum(l['damage_targets'].values())
+
+    def get_cols(self):
+        return ['dt_sum']
+
+
 def z():
     return 0
 
@@ -158,7 +167,8 @@ module = Pipeline(
     AbilityUpgrades(),
     Items(),
     Heroes(),
-    Series()
+    Series(),
+    DamageTargets()
 )
 
 print("Preprocessing data")
@@ -171,7 +181,7 @@ print("Processing train json")
 preprocess_json(df, jd, module)
 del jd
 gc.collect()
-
+print()
 print("Reading test json")
 jd = read_json(get_data('skill_test.jsonlines'))
 print("Processing test json")
