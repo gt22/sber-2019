@@ -26,6 +26,10 @@ def alert(msg: str='Computation complete', ws: bool=True, usr: str='Admin') -> s
         return rep
 
 
+def get_data(name):
+    return f'data/dota2_{name}'
+
+
 # %%
 df = pd.read_csv(get_data("processed_train.csv"), index_col='id')
 test_df = pd.read_csv(get_data("processed_test.csv"), index_col='id')
@@ -47,7 +51,7 @@ treat_questionable_as_cat = True
 
 # %%
 (X_train, X_test,
- y_train, y_test) = train_test_split(df.drop(target, axis=1), df[target], random_state=6741)
+ y_train, y_test) = train_test_split(df.drop(target, axis=1), df[target], random_state=6741, test_size=0.3)
 
 
 # %%
