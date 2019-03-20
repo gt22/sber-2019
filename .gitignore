@@ -1,5 +1,5 @@
 .idea
 data
-.ipynb_checkpoints
+*.ipynb*
 submission.csv
 catboost_info
