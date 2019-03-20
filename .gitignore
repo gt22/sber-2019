@@ -1,5 +1,5 @@
 .idea
 data
 *.ipynb*
-submission.csv
+*submission.csv
 catboost_info

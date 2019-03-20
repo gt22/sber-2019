@@ -125,4 +125,11 @@ def make_submission(predict_func):
     subm.to_csv('submission.csv', header=True, index=False)
 
 
+def make_reversed_submission(predict_func):
+    pred = predict_func(test_df)
+    subm = pd.DataFrame({'id': test_df.index, 'skilled': (~(pred.astype(bool))).astype(int)})
+    subm.to_csv('reversed-submission.csv', header=True, index=False)
+
+
 make_submission(model.predict)
+make_reversed_submission(model.predict)
