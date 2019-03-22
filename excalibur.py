@@ -105,23 +105,10 @@ class Series(ProcessingModule):
 class DamageTargets(ProcessingModule):
 
     def process(self, l: dict, d: dict):
-        for k, v in l['damage_targets'].items():
-            d['dt_sum'] += v
-            if 'tower' in k:
-                d['dt_towers'] += v
-            if 'creep' in k:
-                d['dt_creeps'] += v
-            if 'hero' in k:
-                d['dt_heroes'] += v
-            if 'ward' in k:
-                d['dt_wards'] += v
-            if 'neutral' in k:
-                d['dt_neutrals'] += v
-            if 'siege' in k:
-                d['dt_siege'] += v
+        d['dt_sum'] = sum(l['damage_targets'].values())
 
     def get_cols(self):
-        return ['dt_sum', 'dt_towers', 'dt_creeps', 'dt_heroes', 'dt_wards', 'dt_neutrals', 'dt_siege']
+        return ['dt_sum']
 
 
 def z():
