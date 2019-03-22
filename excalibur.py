@@ -97,13 +97,9 @@ class Series(ProcessingModule):
         d['player_gold_mean'] = np.mean(ser['player_gold'])
         d['player_team_gold_mean'] = np.mean(ser[f'{p_team}_gold'])
         d['enemy_team_gold_mean'] = np.mean(ser[f'{e_team}_gold'])
-        d['player_gold_diff_mean'] = np.mean(np.diff(ser['player_gold']))
-        d['player_team_gold_diff_mean'] = np.mean(np.diff(ser[f'{p_team}_gold']))
-        d['enemy_team_gold_diff_mean'] = np.mean(np.diff(ser[f'{e_team}_gold']))
 
     def get_cols(self):
-        return ['player_gold_mean', 'enemy_team_gold_mean', 'player_team_gold_mean',
-                'player_gold_diff_mean', 'player_team_gold_diff_mean', 'enemy_team_gold_diff_mean']
+        return ['player_gold_mean', 'enemy_team_gold_mean', 'player_team_gold_mean']
 
 
 class DamageTargets(ProcessingModule):
