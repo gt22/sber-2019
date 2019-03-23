@@ -7,6 +7,8 @@ from sklearn.model_selection import train_test_split
 from sklearn.metrics import accuracy_score
 from catboost import CatBoostClassifier
 import os
+
+
 # %%
 
 
@@ -15,7 +17,7 @@ def init_websocket():
     return ws
 
 
-def alert(msg: str='Computation complete', ws: bool=True, usr: str='Admin') -> str:
+def alert(msg: str = 'Computation complete', ws: bool = True, usr: str = 'Admin') -> str:
     if not ws:
         return "Alerted"
     else:
@@ -37,17 +39,13 @@ test_df = pd.read_csv(get_data("processed_test.csv"), index_col='id')
 target = 'skilled'
 
 cat_features = ['player_team', 'winner_team', 'pre_game_duration', 'first_blood_claimed',
-                'hero_id', 'hero_pick_order', 'leaver_status', 'is_winner']
-
-questionable_features = ['party_players', 'level', 'tower_kills', 'roshan_kills',
-                         'radiant_tower_status', 'dire_tower_status', 'dire_barracks_status', 'radiant_barracks_status']
+                'hero_id', 'hero_pick_order', 'leaver_status', 'is_winner', 'party_players',
+                'level', 'tower_kills', 'roshan_kills', 'radiant_tower_status', 'dire_tower_status',
+                'dire_barracks_status', 'radiant_barracks_status']
 
 numeric_features = [c for c in df.columns if
                     c not in cat_features and
-                    c not in questionable_features and
                     c != target]
-
-treat_questionable_as_cat = True
 
 # %%
 (X_train, X_test,
@@ -63,8 +61,6 @@ def cols_to_id(d, cc):
 
 
 cat_id = cols_to_id(X_train, cat_features)
-if treat_questionable_as_cat:
-    cat_id += cols_to_id(X_train, questionable_features)
 
 
 # %%
@@ -116,6 +112,8 @@ model = CatBoostClassifier(
 model.fit(X_train, y_train, cat_features=cat_id, eval_set=(X_test, y_test))
 
 score_model(model.predict, 'catboost')
+
+
 # %%
 
 
