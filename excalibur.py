@@ -86,7 +86,7 @@ class Heroes(ProcessingModule):
             d[f'e_hero_{e_hero}'] += 1
 
     def get_cols(self):
-        return [f'p_hero_{i}' for i in items.index] + [f'e_hero_{i}' for i in items.index]
+        return [f'p_hero_{i}' for i in heroes.index] + [f'e_hero_{i}' for i in heroes.index]
 
 
 class Series(ProcessingModule):
