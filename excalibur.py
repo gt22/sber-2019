@@ -12,10 +12,20 @@ def get_data(name):
     return f'data/dota2_{name}'
 
 
+def parse_list(d):
+    return eval(d.replace('nan', 'None'))
+
+
+def parse_data_list(col):
+    return set(chain.from_iterable(col.apply(parse_list).values))
+
+
 heroes = pd.read_csv(get_data('heroes.csv')).set_index('hero_id')
+roles = parse_data_list(heroes['roles'])
+
 abils = pd.read_csv(get_data('abilities.csv')).set_index('ability_id')
-abils_behavior = set(chain.from_iterable(abils['behavior']
-                                         .apply(lambda x: eval(x.replace('nan', 'None'))).values))
+behaviors = parse_data_list(abils['behavior'])
+
 items = pd.read_csv(get_data('items.csv')).set_index('item_id')
 
 
@@ -42,15 +52,23 @@ class Pipeline(ProcessingModule):
         return sum((m.get_cols() for m in self.modules), [])
 
 
+def get_level(l: dict, d: dict, lvl: int):
+    lup = l['level_up_times']
+    d[f'level_{lvl}'] = -1 if len(lup) < (lvl - 1) else lup[lvl - 2]
+    d[f'level_{lvl}_percent'] = -1 if d[f'level_{lvl}'] == -1 else d[f'level_{lvl}'] / l['duration']
+
+
+def get_level_cols(lvl: int):
+    return [f'level_{lvl}', f'level_{lvl}_percent']
+
+
 class UltTime(ProcessingModule):
 
     def process(self, l: dict, d: dict):
-        lvl = l['level_up_times']
-        d['ult_time'] = -1 if len(lvl) < 9 else lvl[8]
-        d['ult_percent'] = d['ult_time'] / l['duration'] if d['ult_time'] > 0 else -1
+        get_level(l, d, 6)
 
     def get_cols(self):
-        return ['ult_time', 'ult_percent']
+        return get_level_cols(6)
 
 
 class AbilityUpgrades(ProcessingModule):
@@ -58,12 +76,12 @@ class AbilityUpgrades(ProcessingModule):
     def process(self, l: dict, d: dict):
         for b in l['ability_upgrades']:
             d[f'upgrade_beh_list_{abils.loc[b, "behavior"]}'] += 1
-            for bh in eval(abils.loc[b, 'behavior'].replace("nan", "None")):
+            for bh in parse_list(abils.loc[b, 'behavior']):
                 d[f'upgrade_beh_{bh}'] += 1
 
     def get_cols(self):
         return [f'upgrade_beh_list_{b}' for b in abils['behavior']] + \
-               [f'upgrade_beh_{b}' for b in abils_behavior]
+               [f'upgrade_beh_{b}' for b in behaviors]
 
 
 class Items(ProcessingModule):
@@ -82,11 +100,16 @@ class Heroes(ProcessingModule):
         p_team, e_team = ('radiant', 'dire') if l['player_team'] == 'radiant' else ('dire', 'radiant')
         for p_hero in l[f'{p_team}_heroes']:
             d[f'p_hero_{p_hero}'] += 1
+            for role in parse_list(heroes.loc[p_hero, 'roles']):
+                d[f'p_role_{role}'] += 1
         for e_hero in l[f'{e_team}_heroes']:
             d[f'e_hero_{e_hero}'] += 1
+            for role in parse_list(heroes.loc[e_hero, 'roles']):
+                d[f'e_role_{role}'] += 1
 
     def get_cols(self):
-        return [f'p_hero_{i}' for i in heroes.index] + [f'e_hero_{i}' for i in heroes.index]
+        return [f'p_hero_{i}' for i in heroes.index] + [f'e_hero_{i}' for i in heroes.index] + \
+               [f'p_role_{i}' for i in roles] + [f'e_role_{i}' for i in roles]
 
 
 class Series(ProcessingModule):
