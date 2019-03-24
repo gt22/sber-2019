@@ -63,12 +63,14 @@ def get_level_cols(lvl: int):
 
 
 class UltTime(ProcessingModule):
+    levels = [6, 12, 18]
 
     def process(self, l: dict, d: dict):
-        get_level(l, d, 6)
+        for lvl in self.levels:
+            get_level(l, d, lvl)
 
     def get_cols(self):
-        return get_level_cols(6)
+        return sum((get_level_cols(i) for i in self.levels), [])
 
 
 class AbilityUpgrades(ProcessingModule):
