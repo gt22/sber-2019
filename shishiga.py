@@ -38,7 +38,7 @@ def login(email, password):
     return login_ret.cookies['sessionid']
 
 
-def send_submit(email, password, link, comment):
+def send_submit(email, password, filename, link, comment):
     session_id = login(email, password)
     token, cookie_token = get_tokens()
     submit_ret = rq.post('https://contest.ai-academy.ru/submit', headers=headers, data={
@@ -46,7 +46,7 @@ def send_submit(email, password, link, comment):
         'data': json.dumps({
             'slug': '',
             's3_link': link,
-            'upload_filename': 'rev-subm.csv',
+            'upload_filename': filename,
             'comment': comment
         })
     }, cookies={
@@ -70,7 +70,7 @@ def submit(filename, comment=''):
     ftp_cfg = cfg['ftp']
     sber_cfg = cfg['sber']
     link = upload_file(filename, ftp_cfg['login'], ftp_cfg['pass'])
-    return send_submit(sber_cfg['email'], sber_cfg['pass'], link, comment)
+    return send_submit(sber_cfg['email'], sber_cfg['pass'], filename, link, comment)
 
 
 # %%
