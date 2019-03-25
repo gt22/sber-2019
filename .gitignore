@@ -3,3 +3,4 @@ data
 *.ipynb*
 *submission.csv
 catboost_info
+submit_conf.json
