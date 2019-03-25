@@ -100,7 +100,7 @@ def score_model(pred_func, name):
 # %%
 
 model = CatBoostClassifier(
-    iterations=5000,
+    iterations=7000,
     learning_rate=None,
     depth=None,
     eval_metric='Accuracy',

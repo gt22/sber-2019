@@ -63,7 +63,7 @@ def get_level_cols(lvl: int):
 
 
 class UltTime(ProcessingModule):
-    levels = [6, 12, 18]
+    levels = [6, 12, 18, 10, 20, 30]
 
     def process(self, l: dict, d: dict):
         for lvl in self.levels:
