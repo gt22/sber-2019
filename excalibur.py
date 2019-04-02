@@ -28,6 +28,8 @@ behaviors = parse_data_list(abils['behavior'])
 
 items = pd.read_csv(get_data('items.csv')).set_index('item_id')
 
+tower_map = ['t1', 't2', 't3', 'm1', 'm2', 'm3', 'b1', 'b2', 'b3', 'at', 'ab']
+
 
 class ProcessingModule:
 
@@ -136,6 +138,19 @@ class DamageTargets(ProcessingModule):
         return ['dt_sum']
 
 
+class TowerStatus(ProcessingModule):
+
+    def process(self, l: dict, d: dict):
+        p_team, e_team = ('radiant', 'dire') if l['player_team'] == 'radiant' else ('dire', 'radiant')
+        p_status, e_status = (l[f'{t}_tower_status'] for t in (p_team, e_team))
+        for i in range(11):
+            d[f'p_tower_{tower_map[i]}'] = int((p_status & (1 << i)) != 0)
+            d[f'e_tower_{tower_map[i]}'] = int((e_status & (1 << i)) != 0)
+
+    def get_cols(self):
+        return [f'{p}_tower_{n}' for n in tower_map for p in ('p', 'e')]
+
+
 def z():
     return 0
 
@@ -183,37 +198,39 @@ def read_json(f):
     return ret
 
 
-print("Reading data")
-df = pd.read_csv(get_data("skill_train.csv")).set_index('id')
-test_df = pd.read_csv(get_data('skill_test.csv')).set_index('id')
+if __name__ == '__main__':
+    print("Reading data")
+    df = pd.read_csv(get_data("skill_train.csv")).set_index('id')
+    test_df = pd.read_csv(get_data('skill_test.csv')).set_index('id')
 
-module = Pipeline(
-    UltTime(),
-    AbilityUpgrades(),
-    Items(),
-    Heroes(),
-    Series(),
-    DamageTargets()
-)
+    module = Pipeline(
+        UltTime(),
+        AbilityUpgrades(),
+        Items(),
+        Heroes(),
+        Series(),
+        DamageTargets(),
+        TowerStatus()
+    )
 
-print("Preprocessing data")
-preprocess(df)
-preprocess(test_df)
+    print("Preprocessing data")
+    preprocess(df)
+    preprocess(test_df)
 
-print("Reading train json")
-jd = read_json(get_data('skill_train.jsonlines'))
-print("Processing train json")
-preprocess_json(df, jd, module)
-del jd
-gc.collect()
-print()
-print("Reading test json")
-jd = read_json(get_data('skill_test.jsonlines'))
-print("Processing test json")
-preprocess_json(test_df, jd, module)
-del jd
-gc.collect()
+    print("Reading train json")
+    jd = read_json(get_data('skill_train.jsonlines'))
+    print("Processing train json")
+    preprocess_json(df, jd, module)
+    del jd
+    gc.collect()
+    print()
+    print("Reading test json")
+    jd = read_json(get_data('skill_test.jsonlines'))
+    print("Processing test json")
+    preprocess_json(test_df, jd, module)
+    del jd
+    gc.collect()
 
-print("Saving")
-df.to_csv(get_data('processed_train.csv'))
-test_df.to_csv(get_data('processed_test.csv'))
+    print("Saving")
+    df.to_csv(get_data('processed_train.csv'))
+    test_df.to_csv(get_data('processed_test.csv'))

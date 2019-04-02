@@ -7,7 +7,8 @@ from sklearn.model_selection import train_test_split
 from sklearn.metrics import accuracy_score
 from catboost import CatBoostClassifier
 import os
-
+from excalibur import tower_map
+from shishiga import submit
 
 # %%
 
@@ -41,7 +42,8 @@ target = 'skilled'
 cat_features = ['player_team', 'winner_team', 'pre_game_duration', 'first_blood_claimed',
                 'hero_id', 'hero_pick_order', 'leaver_status', 'is_winner', 'party_players',
                 'level', 'tower_kills', 'roshan_kills', 'radiant_tower_status', 'dire_tower_status',
-                'dire_barracks_status', 'radiant_barracks_status']
+                'dire_barracks_status', 'radiant_barracks_status'] \
+               + [f'{p}_tower_{n}' for n in tower_map for p in ('p', 'e')]
 
 numeric_features = [c for c in df.columns if
                     c not in cat_features and
@@ -131,3 +133,6 @@ def make_reversed_submission(predict_func):
 
 make_submission(model.predict)
 make_reversed_submission(model.predict)
+# %%
+# submit('submission', '')
+submit('reversed-submission', '')
