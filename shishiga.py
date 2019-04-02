@@ -87,7 +87,3 @@ def submit(filename, comment=''):
     sber_cfg = cfg['sber']
     link = upload_file(filename, ftp_cfg['login'], ftp_cfg['pass'])
     return send_submit(sber_cfg['email'], sber_cfg['pass'], filename, link, comment)
-
-
-# %%
-ret = submit('reversed-submission', 'Can you hear me?')
