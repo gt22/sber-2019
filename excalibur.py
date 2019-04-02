@@ -91,11 +91,19 @@ class AbilityUpgrades(ProcessingModule):
 class Items(ProcessingModule):
 
     def process(self, l: dict, d: dict):
+        sum_cost = 0
         for item in l['item_purchase_log']:
-            d[f'item_{item["item_id"]}'] += 1
+            iid = item['item_id']
+            iobj = items.loc[iid]
+            d[f'item_{iid}'] += 1
+            d[f'item_type_{iobj["qual"]}'] += 1
+            sum_cost += iobj['cost']
+        d['sum_cost'] = sum_cost
 
     def get_cols(self):
-        return [f'item_{i}' for i in items.index]
+        return [f'item_{i}' for i in items.index] + \
+               [f'item_type_{q}' for q in items['qual'].unique()] + \
+               ['sum_cost']
 
 
 class Heroes(ProcessingModule):
