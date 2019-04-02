@@ -3,6 +3,7 @@ import requests as rq
 import re
 import json
 import ftplib
+from hashlib import md5
 # %%
 headers = {
     'Content-Type': 'application/x-www-form-urlencoded; charset=UTF-8',
@@ -57,12 +58,27 @@ def send_submit(email, password, filename, link, comment):
     return submit_ret
 
 
+def get_file_hash(filename):
+    hash_md5 = md5()
+    with open(filename, "rb") as f:
+        for chunk in iter(lambda: f.read(4096), b""):
+            hash_md5.update(chunk)
+    return hash_md5.hexdigest()
+
+
 def upload_file(filename, ftp_login, ftp_pass):
+    if filename.endswith('.csv'):
+        subm_name = filename[:-4]
+    else:
+        subm_name = filename
+        filename += '.csv'
+
+    f_hash = get_file_hash(filename)
     ftp = ftplib.FTP('10.8.0.1', ftp_login, ftp_pass)
     ftp.cwd('/var/www/html')
-    ftp.storlines(f'STOR {filename}', open(filename, 'rb'))
+    ftp.storlines(f'STOR {subm_name}-{f_hash}.csv', open(filename, 'rb'))
     ftp.close()
-    return f'http://52.48.142.75/{filename}'
+    return f'http://52.48.142.75/{subm_name}-{f_hash}.csv'
 
 
 def submit(filename, comment=''):
@@ -74,4 +90,4 @@ def submit(filename, comment=''):
 
 
 # %%
-ret = submit('reversed-submission.csv', 'Can you hear me?')
+ret = submit('reversed-submission', 'Can you hear me?')
