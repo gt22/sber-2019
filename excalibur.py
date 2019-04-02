@@ -110,18 +110,15 @@ class Heroes(ProcessingModule):
 
     def process(self, l: dict, d: dict):
         p_team, e_team = ('radiant', 'dire') if l['player_team'] == 'radiant' else ('dire', 'radiant')
-        for p_hero in l[f'{p_team}_heroes']:
-            d[f'p_hero_{p_hero}'] += 1
-            for role in parse_list(heroes.loc[p_hero, 'roles']):
-                d[f'p_role_{role}'] += 1
-        for e_hero in l[f'{e_team}_heroes']:
-            d[f'e_hero_{e_hero}'] += 1
-            for role in parse_list(heroes.loc[e_hero, 'roles']):
-                d[f'e_role_{role}'] += 1
+        for (pref, team) in (('p', p_team), ('e', e_team)):
+            for hero in l[f'{team}_heroes']:
+                d[f'{pref}_hero_{hero}'] += 1
+                for role in parse_list(heroes.loc[hero, 'roles']):
+                    d[f'{pref}_role_{role}'] += 1
 
     def get_cols(self):
-        return [f'p_hero_{i}' for i in heroes.index] + [f'e_hero_{i}' for i in heroes.index] + \
-               [f'p_role_{i}' for i in roles] + [f'e_role_{i}' for i in roles]
+        return [f'{p}_hero_{i}' for i in heroes.index for p in ('p', 'e')] + \
+               [f'{p}_role_{i}' for i in roles for p in ('p', 'e')]
 
 
 class Series(ProcessingModule):
@@ -151,9 +148,9 @@ class TowerStatus(ProcessingModule):
     def process(self, l: dict, d: dict):
         p_team, e_team = ('radiant', 'dire') if l['player_team'] == 'radiant' else ('dire', 'radiant')
         p_status, e_status = (l[f'{t}_tower_status'] for t in (p_team, e_team))
-        for i in range(11):
-            d[f'p_tower_{tower_map[i]}'] = int((p_status & (1 << i)) != 0)
-            d[f'e_tower_{tower_map[i]}'] = int((e_status & (1 << i)) != 0)
+        for p, s in (('p', p_status), ('e', e_status)):
+            for i in range(11):
+                d[f'{p}_tower_{tower_map[i]}'] = int((s & (1 << i)) != 0)
 
     def get_cols(self):
         return [f'{p}_tower_{n}' for n in tower_map for p in ('p', 'e')]
