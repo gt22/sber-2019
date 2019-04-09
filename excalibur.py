@@ -28,6 +28,8 @@ behaviors = parse_data_list(abils['behavior'])
 
 items = pd.read_csv(get_data('items.csv')).set_index('item_id')
 
+items_score = pd.read_csv(get_data('items_score.csv')).set_index('id')
+
 tower_map = ['t1', 't2', 't3', 'm1', 'm2', 'm3', 'b1', 'b2', 'b3', 'at', 'ab']
 
 
@@ -98,12 +100,15 @@ class Items(ProcessingModule):
             d[f'item_{iid}'] += 1
             d[f'item_type_{iobj["qual"]}'] += 1
             sum_cost += iobj['cost']
+            if iid in items_score.index:
+                for c in items_score.columns:
+                    d[c] += items_score.loc[iid, c]
         d['sum_cost'] = sum_cost
 
     def get_cols(self):
         return [f'item_{i}' for i in items.index] + \
                [f'item_type_{q}' for q in items['qual'].unique()] + \
-               ['sum_cost']
+               ['sum_cost'] + items_score.columns.tolist()
 
 
 class Heroes(ProcessingModule):
@@ -126,12 +131,20 @@ class Series(ProcessingModule):
     def process(self, l: dict, d: dict):
         p_team, e_team = ('radiant', 'dire') if l['player_team'] == 'radiant' else ('dire', 'radiant')
         ser = l['series']
-        d['player_gold_mean'] = np.mean(ser['player_gold'])
-        d['player_team_gold_mean'] = np.mean(ser[f'{p_team}_gold'])
-        d['enemy_team_gold_mean'] = np.mean(ser[f'{e_team}_gold'])
+        for p, t in (('p', p_team), ('e', e_team)):
+            g = ser[f'{t}_gold']
+            d[f'{p}_gold_mean'] = np.mean(g)
+            d[f'{p}_gold_max'] = g[-1]
+
+        pg = ser['player_gold']
+        d['player_gold_mean'] = np.mean(pg)
+        d['player_gold_max'] = pg[-1]
+        d['player_gold_contrib_mean'] = d['player_gold_mean'] / d['p_gold_mean']
+        d['player_gold_contrib_max'] = d['player_gold_max'] / d['p_gold_max']
 
     def get_cols(self):
-        return ['player_gold_mean', 'enemy_team_gold_mean', 'player_team_gold_mean']
+        return ['player_gold_mean', 'player_gold_contrib_max', 'player_gold_contrib_mean', 'player_gold_max',
+                'e_gold_mean', 'p_gold_mean', 'e_gold_max', 'p_gold_max']
 
 
 class DamageTargets(ProcessingModule):

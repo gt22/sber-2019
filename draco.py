@@ -8,7 +8,7 @@ from sklearn.metrics import accuracy_score
 from catboost import CatBoostClassifier
 import os
 from excalibur import tower_map
-from shishiga import submit
+from shishiga import submit, get_last_score
 
 # %%
 
@@ -102,7 +102,7 @@ def score_model(pred_func, name):
 # %%
 
 model = CatBoostClassifier(
-    iterations=14000,
+    iterations=50000,
     learning_rate=None,
     depth=None,
     eval_metric='Accuracy',
@@ -136,3 +136,8 @@ make_reversed_submission(model.predict)
 # %%
 # submit('submission', '')
 submit('reversed-submission', '')
+# %%
+last_score = get_last_score()
+if last_score < 0.5:
+    last_score = 1 - last_score
+print(f"Last score: {last_score}")

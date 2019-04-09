@@ -4,6 +4,7 @@ import re
 import json
 import ftplib
 from hashlib import md5
+
 # %%
 headers = {
     'Content-Type': 'application/x-www-form-urlencoded; charset=UTF-8',
@@ -56,6 +57,28 @@ def send_submit(email, password, filename, link, comment):
     })
     submit_ret.encoding = 'utf-8'
     return submit_ret
+
+
+def get_remaining_submits(email, password):
+    session_id = login(email, password)
+    token, cookie_token = get_tokens()
+    doc = rq.get('https://contest.ai-academy.ru/submit', headers=headers, cookies={
+        'csrftoken': cookie_token,
+        'sessionid': session_id
+    })
+    return int(re.findall(r'Осталось попыток сегодня: <b>(\d+)</b>', doc.text)[0])
+
+
+def get_last_score():
+    cfg = json.load(open('submit_conf.json'))
+    sber_cfg = cfg['sber']
+    session_id = login(sber_cfg['email'], sber_cfg['pass'])
+    token, cookie_token = get_tokens()
+    doc = rq.get('https://contest.ai-academy.ru/submit', headers=headers, cookies={
+        'csrftoken': cookie_token,
+        'sessionid': session_id
+    })
+    return float(re.findall('<td style="padding-left: 30px;">([\d\.]+)</td>', doc.text)[0])
 
 
 def get_file_hash(filename):
